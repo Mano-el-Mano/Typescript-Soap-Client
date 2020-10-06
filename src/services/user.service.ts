@@ -12,14 +12,7 @@ export class UserService {
       timestamp: new Date(Date.now()),
     })
 
-    return new ResponseUserDTO({
-      id: 1,
-      name: 'kris',
-      images: ['aws bucket id1', 'aws bucket id2'],
-      location: userLocation,
-      password: 'hello 123',
-      rating: 7.5,
-    })
+    return null
   }
 
   createUser(userEntity: CreateUserDTO): string {

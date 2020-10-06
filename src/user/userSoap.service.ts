@@ -1,8 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { ResponseUserDTO } from 'src/controllers/dto/responseUser.dto'
 import { LocationDTO } from '../controllers/dto/location.dto'
-import { CreateUserDTO } from 'src/controllers/dto/createUser.dto'
-import { SoapService } from 'src/soap.client'
+import { CreateUserDTO } from '../controllers/dto/createUser.dto'
+import { SoapService } from '../soap.client'
+import { ResponseUserDTO } from 'src/controllers/dto/responseUser.dto'
+import { plainToClass } from 'class-transformer'
 
 @Injectable()
 export class UserSoapService {
@@ -11,27 +12,39 @@ export class UserSoapService {
     this.soapClient = soapClient
   }
 
-  getUser(id: string): ResponseUserDTO {
-    this.soapClient.getUser({ userId: '3' }, (err, res) => {
-      if (err) throw err
-      console.log(res)
-    })
-    console.log(this.soapClient)
-    const userLocation: LocationDTO = new LocationDTO({
-      lattitude: 123,
-      longtitude: 123123,
-      timestamp: new Date(Date.now()),
-    })
 
-    return new ResponseUserDTO({
-      id: 1,
-      name: 'kris',
-      images: ['aws bucket id1', 'aws bucket id2'],
-      location: userLocation,
-      password: 'hello 123',
-      rating: 7.5,
+  async getUser(id: string): Promise<ResponseUserDTO> {
+    return new Promise((resolve, reject) =>{
+    this.soapClient.getUser({ userId: id }, async (err, res) => {
+      if (err) reject(err);
+      try{
+      const parsedUser: ResponseUserDTO = plainToClass(ResponseUserDTO, JSON.parse(res.user));
+      console.log(parsedUser)
+      resolve(parsedUser)
+      }catch(error){
+        reject(error)
+      }
+    })
+})
+  }
+
+  async getAllUsers(): Promise<ResponseUserDTO[]>{
+    return new Promise((resolve, reject) =>{
+      this.soapClient.getAllUsers({}, async (err, res) =>{
+        if(err) reject(err)
+        const userResponse: Partial<ResponseUserDTO>[] = JSON.parse(res.users)
+        try{
+          const parsedUsers: ResponseUserDTO[] = userResponse.map(user =>{
+            return plainToClass(ResponseUserDTO, user)
+          })
+          resolve(parsedUsers)
+        }catch(error){
+          reject(error)
+        }
+      })
     })
   }
+
 
   createUser(userEntity: CreateUserDTO): string {
     //call database services middleware etc
